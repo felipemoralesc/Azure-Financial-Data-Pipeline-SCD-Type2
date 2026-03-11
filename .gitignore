@@ -1,3 +1,15 @@
+# Secretos y llaves
 .env
+
+# Datos locales (No se suben a GitHub para no saturar el repo)
+data/*.json
+data/*.parquet
+
+# Python
 __pycache__/
-*.json
+*.py[cod]
+*$py.class
+
+# Entorno virtual y VS Code
+venv/
+.vscode/
