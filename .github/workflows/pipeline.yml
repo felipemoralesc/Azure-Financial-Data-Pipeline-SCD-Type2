@@ -27,8 +27,8 @@ jobs:
       run: pip install -r requirements.txt
 
     - name: Run Bronze to Silver Script
-    env:
-    AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
-    run: |
-    cd scripts
-    python bronze_to_silver.py
+      env:
+        AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+      run: |
+        cd scripts
+        python bronze_to_silver.py
