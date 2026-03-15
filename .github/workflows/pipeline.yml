@@ -1,1 +1,40 @@
+name: Azure Financial Data Pipeline
 
+on:
+  workflow_dispatch:   # Permite ejecutarlo manualmente
+  schedule:
+    - cron: "0 12 * * *"   # Se ejecuta todos los días
+
+jobs:
+  run-data-pipeline:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+
+    - name: Install dependencies
+      run: |
+        pip install pandas
+        pip install pyarrow
+        pip install requests
+        pip install azure-storage-blob
+        pip install python-dotenv
+
+    - name: Run Extract Script (API → Bronze)
+      env:
+        STOCK_API_KEY: ${{ secrets.STOCK_API_KEY }}
+        AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+      run: python scripts/extract_massive_data.py
+
+    - name: Run Transform Script (Bronze → Silver)
+      env:
+        AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+      run: python scripts/bronze_to_silver.py
