@@ -24,16 +24,14 @@ jobs:
       run: pip install -r requirements.txt
 
     - name: Run Extract Script (API → Bronze)
+      working-directory: scripts
       env:
         STOCK_API_KEY: ${{ secrets.STOCK_API_KEY }}
         AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
-      run: |
-        cd scripts
-        python extract_massive_data.py
+      run: python extract_massive_data.py
 
     - name: Run Transform Script (Bronze → Silver)
+      working-directory: scripts
       env:
         AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
-      run: |
-        cd scripts
-        python bronze_to_silver.py
+      run: python bronze_to_silver.py
