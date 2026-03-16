@@ -14,9 +14,11 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 AZURE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 CONTAINER_NAME = "datalake"
 
+
 def transform_bronze_to_silver():
 
     try:
+
         print("☁️ Conectando con Azure Data Lake...")
 
         blob_service_client = BlobServiceClient.from_connection_string(
@@ -52,15 +54,43 @@ def transform_bronze_to_silver():
         df["price"] = pd.to_numeric(df["4. close"], errors="coerce")
         df["volume"] = pd.to_numeric(df["5. volume"], errors="coerce")
 
+        df["symbol"] = df["symbol"]
+
         df = df[["symbol", "date", "price", "volume"]]
 
         df["processed_at"] = datetime.utcnow()
 
-        print(f"✅ Transformación exitosa: {len(df)} registros")
+        print(f"📊 Registros iniciales: {len(df)}")
 
-        # --- 4. CONVERTIR A PARQUET EN MEMORIA ---
+        # =================================================
+        # DATA QUALITY CHECKS
+        # =================================================
+
+        # 1️⃣ eliminar precios inválidos
+        df = df[df["price"] > 0]
+
+        # 2️⃣ eliminar volumen inválido
+        df = df[df["volume"] >= 0]
+
+        # 3️⃣ eliminar nulos
+        df = df.dropna(subset=["symbol", "price", "volume", "date"])
+
+        # 4️⃣ eliminar duplicados
+        df = df.drop_duplicates()
+
+        print(f"✅ Registros después de validación: {len(df)}")
+
+        # =================================================
+        # CONVERTIR A PARQUET
+        # =================================================
+
         parquet_buffer = BytesIO()
-        df.to_parquet(parquet_buffer, index=False, engine="pyarrow")
+
+        df.to_parquet(
+            parquet_buffer,
+            index=False,
+            engine="pyarrow"
+        )
 
         # --- 5. SUBIR A SILVER ---
         silver_blob_name = "02-silver/stock_data.parquet"
@@ -69,11 +99,15 @@ def transform_bronze_to_silver():
 
         parquet_buffer.seek(0)
 
-        silver_blob.upload_blob(parquet_buffer, overwrite=True)
+        silver_blob.upload_blob(
+            parquet_buffer,
+            overwrite=True
+        )
 
         print("🚀 ¡Capa Silver actualizada!")
 
     except Exception as e:
+
         print(f"❌ Error en la transformación: {e}")
 
 
