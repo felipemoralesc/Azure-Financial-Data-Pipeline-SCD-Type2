@@ -7,7 +7,7 @@ from io import BytesIO
 connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 
 # Nombre del File System (container)
-file_system_name = "financial-data"
+file_system_name = "datalake"
 
 # Rutas dentro del Data Lake
 silver_file_path = "02-silver/stock_cleaned.parquet"
