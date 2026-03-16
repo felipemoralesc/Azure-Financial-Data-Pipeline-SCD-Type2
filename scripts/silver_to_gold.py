@@ -10,7 +10,7 @@ connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 file_system_name = "datalake"
 
 # Rutas dentro del Data Lake
-silver_file_path = "02-silver/stock_cleaned.parquet"
+silver_file_path = "02-silver/stock_data.parquet"
 gold_file_path = "03-gold/stock_analytics.parquet"
 
 # Crear cliente del Data Lake
