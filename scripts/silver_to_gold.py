@@ -12,7 +12,8 @@ silver_file_path = "02-silver/stock_data.parque"
 gold_file_path = "03-gold/stock_analytics.parquet"
 
 # Conexión al Data Lake
-service_client = DataLakeServiceClient.from_connection_string(connection_string)
+# service_client = DataLakeServiceClient.from_connection_string(connection_string)
+container_client = blob_service_client.get_container_client(CONTAINER_NAME)
 file_system_client = service_client.get_file_system_client(file_system)
 
 # Leer archivo Silver
