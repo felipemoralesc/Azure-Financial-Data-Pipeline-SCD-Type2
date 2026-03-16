@@ -8,7 +8,7 @@ connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 
 file_system = "financial-data"
 
-silver_file_path = "02-silver/stock_cleaned.parquet"
+silver_file_path = "02-silver/stock_data.parquet"
 gold_file_path = "03-gold/stock_analytics.parquet"
 
 # Conexión al Data Lake
