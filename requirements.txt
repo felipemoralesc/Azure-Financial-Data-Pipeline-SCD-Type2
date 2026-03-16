@@ -2,4 +2,5 @@ pandas
 pyarrow
 requests
 azure-storage-blob
+azure-storage-file-datalake
 python-dotenv
