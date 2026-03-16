@@ -31,11 +31,11 @@ df = pd.read_parquet(BytesIO(data))
 print("Archivo Silver cargado")
 
 # Transformaciones para Gold
-gold_df = df.groupby(["Symbol","Date"]).agg(
-    avg_price=("Price", "mean"),
-    max_price=("Price", "max"),
-    min_price=("Price", "min"),
-    avg_volume=("Volume", "mean"),
+gold_df = df.groupby(["symbol","date"]).agg(
+    avg_price=("price", "mean"),
+    max_price=("price", "max"),
+    min_price=("price", "min"),
+    avg_volume=("volume", "mean"),
     last_pipeline_run=("Processed_at", "max")
 ).reset_index()
 
