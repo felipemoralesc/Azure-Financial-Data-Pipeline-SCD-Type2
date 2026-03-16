@@ -35,3 +35,9 @@ jobs:
       env:
         AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
       run: python bronze_to_silver.py
+
+    - name: Run Silver to Gold
+      working-directory: scripts
+      env:
+        AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+      run: python silver_to_gold.py
