@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from azure.storage.filedatalake import DataLakeServiceClient
+from azure.storage.blob import BlobServiceClient
 from io import BytesIO
 
 # Variables de entorno
