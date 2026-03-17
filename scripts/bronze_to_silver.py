@@ -14,6 +14,9 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 AZURE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 CONTAINER_NAME = "datalake"
 
+METADATA_PATH = "metadata/processed_files.json"
+SILVER_PATH = "02-silver/stock_data.parquet"
+
 def transform_bronze_to_silver():
 
     try:
@@ -26,49 +29,65 @@ def transform_bronze_to_silver():
         container_client = blob_service_client.get_container_client(CONTAINER_NAME)
 
         # ==========================================
-        # 1. LEER TODOS LOS ARCHIVOS DE BRONZE
+        # 1. LEER METADATA (archivos procesados)
         # ==========================================
 
-        print("🔎 Buscando archivos en 01-bronze...")
+        metadata_blob = container_client.get_blob_client(METADATA_PATH)
+
+        try:
+            metadata_bytes = metadata_blob.download_blob().readall()
+            processed_files = json.loads(metadata_bytes)
+            print(f"📘 Archivos ya procesados: {len(processed_files)}")
+        except Exception:
+            print("⚠️ No existe metadata. Se inicializa vacío.")
+            processed_files = []
+
+        # ==========================================
+        # 2. LISTAR ARCHIVOS EN BRONZE
+        # ==========================================
 
         bronze_blobs = list(container_client.list_blobs(name_starts_with="01-bronze/"))
 
         if not bronze_blobs:
             raise Exception("No se encontraron archivos en Bronze")
 
-        # Ordenar por nombre (fecha en el filename)
         bronze_blobs_sorted = sorted(bronze_blobs, key=lambda x: x.name)
 
-        print(f"📂 Total archivos encontrados: {len(bronze_blobs_sorted)}")
-
         # ==========================================
-        # 2. LEER SILVER EXISTENTE
+        # 3. FILTRAR SOLO NUEVOS
         # ==========================================
 
-        silver_blob_name = "02-silver/stock_data.parquet"
-        silver_blob = container_client.get_blob_client(silver_blob_name)
+        new_blobs = [b for b in bronze_blobs_sorted if b.name not in processed_files]
+
+        print(f"🆕 Archivos nuevos encontrados: {len(new_blobs)}")
+
+        if not new_blobs:
+            print("✅ No hay nuevos archivos para procesar.")
+            return
+
+        # ==========================================
+        # 4. LEER SILVER EXISTENTE
+        # ==========================================
+
+        silver_blob = container_client.get_blob_client(SILVER_PATH)
 
         try:
-            print("📥 Leyendo Silver existente...")
-
             existing_data = silver_blob.download_blob().readall()
             df_existing = pd.read_parquet(BytesIO(existing_data))
-
             print(f"📊 Registros existentes: {len(df_existing)}")
-
         except Exception:
-            print("⚠️ No existe Silver previo. Se creará uno nuevo.")
+            print("⚠️ No existe Silver previo.")
             df_existing = pd.DataFrame()
 
         # ==========================================
-        # 3. PROCESAR TODOS LOS ARCHIVOS
+        # 5. PROCESAR SOLO NUEVOS ARCHIVOS
         # ==========================================
 
         all_new_data = []
 
-        for blob in bronze_blobs_sorted:
+        for blob in new_blobs:
 
-            print(f"📂 Procesando: {blob.name}")
+            print(f"📂 Procesando nuevo archivo: {blob.name}")
 
             blob_client = container_client.get_blob_client(blob.name)
 
@@ -94,22 +113,15 @@ def transform_bronze_to_silver():
 
             all_new_data.append(df)
 
-        # Unir todos los nuevos
         df_new = pd.concat(all_new_data, ignore_index=True)
 
-        print(f"📊 Total registros nuevos: {len(df_new)}")
+        print(f"📊 Registros nuevos procesados: {len(df_new)}")
 
         # ==========================================
-        # 4. UNIÓN CON HISTÓRICO
+        # 6. UNIÓN + DEDUPLICACIÓN
         # ==========================================
 
         df_combined = pd.concat([df_existing, df_new], ignore_index=True)
-
-        print(f"📊 Total combinado: {len(df_combined)}")
-
-        # ==========================================
-        # 5. DEDUPLICACIÓN
-        # ==========================================
 
         df_combined = df_combined.sort_values("processed_at", ascending=False)
 
@@ -121,7 +133,7 @@ def transform_bronze_to_silver():
         print(f"✅ Total final sin duplicados: {len(df_final)}")
 
         # ==========================================
-        # 6. GUARDAR EN SILVER
+        # 7. GUARDAR SILVER
         # ==========================================
 
         parquet_buffer = BytesIO()
@@ -131,10 +143,23 @@ def transform_bronze_to_silver():
 
         silver_blob.upload_blob(parquet_buffer, overwrite=True)
 
-        print("🚀 ¡Capa Silver actualizada (MULTI-ARCHIVO + INCREMENTAL)!")
+        print("🚀 Silver actualizado correctamente")
+
+        # ==========================================
+        # 8. ACTUALIZAR METADATA
+        # ==========================================
+
+        processed_files.extend([b.name for b in new_blobs])
+
+        metadata_blob.upload_blob(
+            json.dumps(processed_files, indent=2),
+            overwrite=True
+        )
+
+        print("📘 Metadata actualizada")
 
     except Exception as e:
-        print(f"❌ Error en la transformación: {e}")
+        print(f"❌ Error en el pipeline: {e}")
 
 
 if __name__ == "__main__":
