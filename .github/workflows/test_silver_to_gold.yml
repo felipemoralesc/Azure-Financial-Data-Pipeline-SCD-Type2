@@ -25,4 +25,4 @@ jobs:
       working-directory: scripts
       env:
         AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
-      run: python silver_to_gold.py.py
+      run: python silver_to_gold.py
