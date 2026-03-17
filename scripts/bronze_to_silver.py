@@ -14,11 +14,9 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 AZURE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 CONTAINER_NAME = "datalake"
 
-
 def transform_bronze_to_silver():
 
     try:
-
         print("☁️ Conectando con Azure Data Lake...")
 
         blob_service_client = BlobServiceClient.from_connection_string(
@@ -27,7 +25,10 @@ def transform_bronze_to_silver():
 
         container_client = blob_service_client.get_container_client(CONTAINER_NAME)
 
-        # --- 1. BUSCAR ARCHIVOS EN BRONZE ---
+        # ==========================================
+        # 1. LEER TODOS LOS ARCHIVOS DE BRONZE
+        # ==========================================
+
         print("🔎 Buscando archivos en 01-bronze...")
 
         bronze_blobs = list(container_client.list_blobs(name_starts_with="01-bronze/"))
@@ -35,79 +36,104 @@ def transform_bronze_to_silver():
         if not bronze_blobs:
             raise Exception("No se encontraron archivos en Bronze")
 
-        latest_blob = sorted(bronze_blobs, key=lambda x: x.last_modified)[-1]
+        # Ordenar por nombre (fecha en el filename)
+        bronze_blobs_sorted = sorted(bronze_blobs, key=lambda x: x.name)
 
-        print(f"📂 Archivo encontrado: {latest_blob.name}")
+        print(f"📂 Total archivos encontrados: {len(bronze_blobs_sorted)}")
 
-        # --- 2. DESCARGAR JSON DESDE BRONZE ---
-        blob_client = container_client.get_blob_client(latest_blob.name)
+        # ==========================================
+        # 2. LEER SILVER EXISTENTE
+        # ==========================================
 
-        json_bytes = blob_client.download_blob().readall()
-        data_json = json.loads(json_bytes)
+        silver_blob_name = "02-silver/stock_data.parquet"
+        silver_blob = container_client.get_blob_client(silver_blob_name)
 
-        # --- 3. TRANSFORMACIÓN CON PANDAS ---
-        print("⚡ Transformando datos...")
+        try:
+            print("📥 Leyendo Silver existente...")
 
-        df = pd.DataFrame(data_json)
+            existing_data = silver_blob.download_blob().readall()
+            df_existing = pd.read_parquet(BytesIO(existing_data))
 
-        df["date"] = pd.to_datetime(df["date"])
-        df["price"] = pd.to_numeric(df["4. close"], errors="coerce")
-        df["volume"] = pd.to_numeric(df["5. volume"], errors="coerce")
+            print(f"📊 Registros existentes: {len(df_existing)}")
 
-        df["symbol"] = df["symbol"]
+        except Exception:
+            print("⚠️ No existe Silver previo. Se creará uno nuevo.")
+            df_existing = pd.DataFrame()
 
-        df = df[["symbol", "date", "price", "volume"]]
+        # ==========================================
+        # 3. PROCESAR TODOS LOS ARCHIVOS
+        # ==========================================
 
-        df["processed_at"] = datetime.utcnow()
+        all_new_data = []
 
-        print(f"📊 Registros iniciales: {len(df)}")
+        for blob in bronze_blobs_sorted:
 
-        # =================================================
-        # DATA QUALITY CHECKS
-        # =================================================
+            print(f"📂 Procesando: {blob.name}")
 
-        # 1️⃣ eliminar precios inválidos
-        df = df[df["price"] > 0]
+            blob_client = container_client.get_blob_client(blob.name)
 
-        # 2️⃣ eliminar volumen inválido
-        df = df[df["volume"] >= 0]
+            json_bytes = blob_client.download_blob().readall()
+            data_json = json.loads(json_bytes)
 
-        # 3️⃣ eliminar nulos
-        df = df.dropna(subset=["symbol", "price", "volume", "date"])
+            df = pd.DataFrame(data_json)
 
-        # 4️⃣ eliminar duplicados
-        df = df.drop_duplicates()
+            # Transformaciones
+            df["date"] = pd.to_datetime(df["date"])
+            df["price"] = pd.to_numeric(df["4. close"], errors="coerce")
+            df["volume"] = pd.to_numeric(df["5. volume"], errors="coerce")
 
-        print(f"✅ Registros después de validación: {len(df)}")
+            df = df[["symbol", "date", "price", "volume"]]
 
-        # =================================================
-        # CONVERTIR A PARQUET
-        # =================================================
+            df["processed_at"] = datetime.utcnow()
 
-        parquet_buffer = BytesIO()
+            # Data Quality
+            df = df[df["price"] > 0]
+            df = df[df["volume"] >= 0]
+            df = df.dropna(subset=["symbol", "price", "volume", "date"])
+            df = df.drop_duplicates()
 
-        df.to_parquet(
-            parquet_buffer,
-            index=False,
-            engine="pyarrow"
+            all_new_data.append(df)
+
+        # Unir todos los nuevos
+        df_new = pd.concat(all_new_data, ignore_index=True)
+
+        print(f"📊 Total registros nuevos: {len(df_new)}")
+
+        # ==========================================
+        # 4. UNIÓN CON HISTÓRICO
+        # ==========================================
+
+        df_combined = pd.concat([df_existing, df_new], ignore_index=True)
+
+        print(f"📊 Total combinado: {len(df_combined)}")
+
+        # ==========================================
+        # 5. DEDUPLICACIÓN
+        # ==========================================
+
+        df_combined = df_combined.sort_values("processed_at", ascending=False)
+
+        df_final = df_combined.drop_duplicates(
+            subset=["symbol", "date"],
+            keep="first"
         )
 
-        # --- 5. SUBIR A SILVER ---
-        silver_blob_name = "02-silver/stock_data.parquet"
+        print(f"✅ Total final sin duplicados: {len(df_final)}")
 
-        silver_blob = container_client.get_blob_client(silver_blob_name)
+        # ==========================================
+        # 6. GUARDAR EN SILVER
+        # ==========================================
+
+        parquet_buffer = BytesIO()
+        df_final.to_parquet(parquet_buffer, index=False, engine="pyarrow")
 
         parquet_buffer.seek(0)
 
-        silver_blob.upload_blob(
-            parquet_buffer,
-            overwrite=True
-        )
+        silver_blob.upload_blob(parquet_buffer, overwrite=True)
 
-        print("🚀 ¡Capa Silver actualizada!")
+        print("🚀 ¡Capa Silver actualizada (MULTI-ARCHIVO + INCREMENTAL)!")
 
     except Exception as e:
-
         print(f"❌ Error en la transformación: {e}")
 
 
