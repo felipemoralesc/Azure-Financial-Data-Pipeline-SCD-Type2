@@ -26,9 +26,7 @@ CONTAINER_NAME = "datalake"
 symbols = [
     "AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA", "BRK.B", "V", "JNJ",
     "WMT", "JPM", "MA", "PG", "UNH", "HD", "DIS", "PYPL", "BAC", "VZ",
-    "ADBE", "CMCSA", "NFLX", "KO", "PFE", "INTC", "T", "PEP", "ABT", "CSCO",
-    "XOM", "CVX", "NKE", "MRK", "CRM", "AVGO", "WFC", "ACN", "COST", "MCD",
-    "TMO", "MDT", "LLY", "DHR", "NEE", "TXN", "HON", "UPS", "QCOM", "LIN"
+    "ADBE", "CMCSA", "NFLX", "KO", "PFE"
 ]
 
 def extract_and_load_massive():
