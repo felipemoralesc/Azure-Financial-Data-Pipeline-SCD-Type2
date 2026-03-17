@@ -12,10 +12,9 @@ connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 file_system_name = "datalake"
 
 silver_file_path = "02-silver/stock_data.parquet"
-gold_file_path = "03-gold/stock_analytics.parquet"
+gold_base_path = "03-gold"
 
 service_client = DataLakeServiceClient.from_connection_string(connection_string)
-
 file_system_client = service_client.get_file_system_client(file_system_name)
 
 print("Conectado a Azure Data Lake")
@@ -36,16 +35,16 @@ print("Archivo Silver cargado")
 
 
 # ==========================================
-# 3. Normalizar nombres de columnas
+# 3. Normalizar columnas
 # ==========================================
 
 df.columns = df.columns.str.lower().str.strip()
 
-print("Columnas detectadas:", df.columns)
+print("Columnas:", df.columns)
 
 
 # ==========================================
-# 4. Validar columnas necesarias
+# 4. Validar columnas
 # ==========================================
 
 required_columns = ["symbol", "date", "price", "volume", "processed_at"]
@@ -53,18 +52,18 @@ required_columns = ["symbol", "date", "price", "volume", "processed_at"]
 missing_columns = [col for col in required_columns if col not in df.columns]
 
 if missing_columns:
-    raise Exception(f"Faltan columnas en el dataset: {missing_columns}")
+    raise Exception(f"Faltan columnas: {missing_columns}")
 
 
 # ==========================================
-# 5. Convertir timestamp a fecha real
+# 5. Asegurar tipo fecha
 # ==========================================
 
-df["date"] = pd.to_datetime(df["date"], unit="ms")
+df["date"] = pd.to_datetime(df["date"])
 
 
 # ==========================================
-# 6. Transformaciones para GOLD
+# 6. Transformaciones GOLD
 # ==========================================
 
 gold_df = df.groupby(["symbol", "date"]).agg(
@@ -79,19 +78,30 @@ print("Transformaciones Gold completadas")
 
 
 # ==========================================
-# 7. Convertir dataframe a parquet
+# 7. Crear columnas de partición
 # ==========================================
 
-buffer = BytesIO()
-gold_df.to_parquet(buffer, index=False)
+gold_df["year"] = gold_df["date"].dt.year
+gold_df["month"] = gold_df["date"].dt.month
+gold_df["day"] = gold_df["date"].dt.day
 
 
 # ==========================================
-# 8. Guardar en carpeta GOLD
+# 8. Guardar por particiones
 # ==========================================
 
-gold_file_client = file_system_client.get_file_client(gold_file_path)
+for (year, month, day), partition_df in gold_df.groupby(["year", "month", "day"]):
 
-gold_file_client.upload_data(buffer.getvalue(), overwrite=True)
+    # Crear ruta dinámica
+    partition_path = f"{gold_base_path}/year={year}/month={month:02d}/day={day:02d}/stock_analytics.parquet"
 
-print("Archivo Gold generado correctamente en 03-gold")
+    print(f"Guardando partición: {partition_path}")
+
+    buffer = BytesIO()
+    partition_df.to_parquet(buffer, index=False)
+
+    file_client = file_system_client.get_file_client(partition_path)
+
+    file_client.upload_data(buffer.getvalue(), overwrite=True)
+
+print("Proceso Gold con particionamiento completado")
