@@ -25,18 +25,32 @@ SILVER_PATH = "02-silver/stock_data.parquet"
 # CONFIGURACIÓN LOGGING
 # ==========================================
 
+import logging
+
 log_dir = BASE_DIR / "logs"
 os.makedirs(log_dir, exist_ok=True)
 
 log_filename = log_dir / f"bronze_to_silver_{datetime.now().strftime('%Y%m%d')}.log"
 
-logging.basicConfig(
-    filename=str(log_filename),
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
-
 logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+# Limpiar handlers previos
+if logger.hasHandlers():
+    logger.handlers.clear()
+
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+
+# 📁 File Handler (archivo)
+file_handler = logging.FileHandler(str(log_filename))
+file_handler.setFormatter(formatter)
+
+# 🖥️ Console Handler (GitHub Actions)
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(formatter)
+
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
 
 # ==========================================
 # PIPELINE
