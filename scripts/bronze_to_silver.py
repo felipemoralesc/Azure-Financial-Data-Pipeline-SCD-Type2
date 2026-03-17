@@ -1,13 +1,17 @@
 import pandas as pd
 import json
 import os
+import logging
 from io import BytesIO
 from datetime import datetime
 from azure.storage.blob import BlobServiceClient
 from dotenv import load_dotenv
 from pathlib import Path
 
-# --- CONFIGURACIÓN ---
+# ==========================================
+# CONFIGURACIÓN GENERAL
+# ==========================================
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
@@ -17,10 +21,34 @@ CONTAINER_NAME = "datalake"
 METADATA_PATH = "metadata/processed_files.json"
 SILVER_PATH = "02-silver/stock_data.parquet"
 
+# ==========================================
+# CONFIGURACIÓN LOGGING
+# ==========================================
+
+log_dir = BASE_DIR / "logs"
+os.makedirs(log_dir, exist_ok=True)
+
+log_filename = log_dir / f"bronze_to_silver_{datetime.now().strftime('%Y%m%d')}.log"
+
+logging.basicConfig(
+    filename=str(log_filename),
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+logger = logging.getLogger()
+
+# ==========================================
+# PIPELINE
+# ==========================================
+
 def transform_bronze_to_silver():
 
+    start_time = datetime.now()
+    logger.info("🚀 Inicio del proceso bronze_to_silver")
+
     try:
-        print("☁️ Conectando con Azure Data Lake...")
+        logger.info("☁️ Conectando con Azure Data Lake...")
 
         blob_service_client = BlobServiceClient.from_connection_string(
             AZURE_CONNECTION_STRING
@@ -29,7 +57,7 @@ def transform_bronze_to_silver():
         container_client = blob_service_client.get_container_client(CONTAINER_NAME)
 
         # ==========================================
-        # 1. LEER METADATA (archivos procesados)
+        # 1. LEER METADATA
         # ==========================================
 
         metadata_blob = container_client.get_blob_client(METADATA_PATH)
@@ -37,9 +65,9 @@ def transform_bronze_to_silver():
         try:
             metadata_bytes = metadata_blob.download_blob().readall()
             processed_files = json.loads(metadata_bytes)
-            print(f"📘 Archivos ya procesados: {len(processed_files)}")
+            logger.info(f"📘 Archivos ya procesados: {len(processed_files)}")
         except Exception:
-            print("⚠️ No existe metadata. Se inicializa vacío.")
+            logger.warning("⚠️ No existe metadata. Se inicializa vacío.")
             processed_files = []
 
         # ==========================================
@@ -53,16 +81,18 @@ def transform_bronze_to_silver():
 
         bronze_blobs_sorted = sorted(bronze_blobs, key=lambda x: x.name)
 
+        logger.info(f"📂 Archivos encontrados en Bronze: {len(bronze_blobs_sorted)}")
+
         # ==========================================
         # 3. FILTRAR SOLO NUEVOS
         # ==========================================
 
         new_blobs = [b for b in bronze_blobs_sorted if b.name not in processed_files]
 
-        print(f"🆕 Archivos nuevos encontrados: {len(new_blobs)}")
+        logger.info(f"🆕 Archivos nuevos encontrados: {len(new_blobs)}")
 
         if not new_blobs:
-            print("✅ No hay nuevos archivos para procesar.")
+            logger.info("✅ No hay nuevos archivos para procesar.")
             return
 
         # ==========================================
@@ -74,20 +104,20 @@ def transform_bronze_to_silver():
         try:
             existing_data = silver_blob.download_blob().readall()
             df_existing = pd.read_parquet(BytesIO(existing_data))
-            print(f"📊 Registros existentes: {len(df_existing)}")
+            logger.info(f"📊 Registros existentes en Silver: {len(df_existing)}")
         except Exception:
-            print("⚠️ No existe Silver previo.")
+            logger.warning("⚠️ No existe Silver previo.")
             df_existing = pd.DataFrame()
 
         # ==========================================
-        # 5. PROCESAR SOLO NUEVOS ARCHIVOS
+        # 5. PROCESAR NUEVOS ARCHIVOS
         # ==========================================
 
         all_new_data = []
 
         for blob in new_blobs:
 
-            print(f"📂 Procesando nuevo archivo: {blob.name}")
+            logger.info(f"📂 Procesando archivo: {blob.name}")
 
             blob_client = container_client.get_blob_client(blob.name)
 
@@ -96,26 +126,37 @@ def transform_bronze_to_silver():
 
             df = pd.DataFrame(data_json)
 
+            total_records = len(df)
+
             # Transformaciones
             df["date"] = pd.to_datetime(df["date"])
             df["price"] = pd.to_numeric(df["4. close"], errors="coerce")
             df["volume"] = pd.to_numeric(df["5. volume"], errors="coerce")
 
             df = df[["symbol", "date", "price", "volume"]]
-
             df["processed_at"] = datetime.utcnow()
 
             # Data Quality
-            df = df[df["price"] > 0]
-            df = df[df["volume"] >= 0]
-            df = df.dropna(subset=["symbol", "price", "volume", "date"])
-            df = df.drop_duplicates()
+            df_clean = df[
+                (df["price"] > 0) &
+                (df["volume"] >= 0)
+            ]
 
-            all_new_data.append(df)
+            df_clean = df_clean.dropna(subset=["symbol", "price", "volume", "date"])
+            df_clean = df_clean.drop_duplicates()
+
+            valid_records = len(df_clean)
+            invalid_records = total_records - valid_records
+
+            logger.info(f"Total registros: {total_records}")
+            logger.info(f"Registros válidos: {valid_records}")
+            logger.info(f"Registros descartados: {invalid_records}")
+
+            all_new_data.append(df_clean)
 
         df_new = pd.concat(all_new_data, ignore_index=True)
 
-        print(f"📊 Registros nuevos procesados: {len(df_new)}")
+        logger.info(f"📊 Registros nuevos procesados: {len(df_new)}")
 
         # ==========================================
         # 6. UNIÓN + DEDUPLICACIÓN
@@ -130,7 +171,7 @@ def transform_bronze_to_silver():
             keep="first"
         )
 
-        print(f"✅ Total final sin duplicados: {len(df_final)}")
+        logger.info(f"✅ Total final sin duplicados: {len(df_final)}")
 
         # ==========================================
         # 7. GUARDAR SILVER
@@ -143,7 +184,7 @@ def transform_bronze_to_silver():
 
         silver_blob.upload_blob(parquet_buffer, overwrite=True)
 
-        print("🚀 Silver actualizado correctamente")
+        logger.info("🚀 Silver actualizado correctamente")
 
         # ==========================================
         # 8. ACTUALIZAR METADATA
@@ -156,10 +197,16 @@ def transform_bronze_to_silver():
             overwrite=True
         )
 
-        print("📘 Metadata actualizada")
+        logger.info(f"📘 Metadata actualizada con {len(new_blobs)} archivos nuevos")
 
     except Exception as e:
-        print(f"❌ Error en el pipeline: {e}")
+        logger.error(f"❌ Error en el pipeline: {str(e)}")
+        raise
+
+    finally:
+        end_time = datetime.now()
+        duration = (end_time - start_time).total_seconds()
+        logger.info(f"⏱ Tiempo total de ejecución: {duration} segundos")
 
 
 if __name__ == "__main__":
