@@ -25,8 +25,6 @@ SILVER_PATH = "02-silver/stock_data.parquet"
 # CONFIGURACIÓN LOGGING
 # ==========================================
 
-import logging
-
 log_dir = BASE_DIR / "logs"
 os.makedirs(log_dir, exist_ok=True)
 
@@ -41,11 +39,11 @@ if logger.hasHandlers():
 
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 
-# 📁 File Handler (archivo)
+# File handler (archivo)
 file_handler = logging.FileHandler(str(log_filename))
 file_handler.setFormatter(formatter)
 
-# 🖥️ Console Handler (GitHub Actions)
+# Console handler (GitHub Actions)
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(formatter)
 
@@ -60,6 +58,8 @@ def transform_bronze_to_silver():
 
     start_time = datetime.now()
     logger.info("🚀 Inicio del proceso bronze_to_silver")
+
+    container_client = None  # IMPORTANTE para uso en finally
 
     try:
         logger.info("☁️ Conectando con Azure Data Lake...")
@@ -139,7 +139,6 @@ def transform_bronze_to_silver():
             data_json = json.loads(json_bytes)
 
             df = pd.DataFrame(data_json)
-
             total_records = len(df)
 
             # Transformaciones
@@ -217,26 +216,29 @@ def transform_bronze_to_silver():
         logger.error(f"❌ Error en el pipeline: {str(e)}")
         raise
 
-   finally:
-    end_time = datetime.now()
-    duration = (end_time - start_time).total_seconds()
-    logger.info(f"⏱ Tiempo total de ejecución: {duration} segundos")
+    finally:
+        end_time = datetime.now()
+        duration = (end_time - start_time).total_seconds()
+        logger.info(f"⏱ Tiempo total de ejecución: {duration} segundos")
 
-    try:
-        # Subir log a Data Lake
-        log_blob_path = f"logs/{log_filename.name}"
+        # Subir log a Azure
+        try:
+            if container_client:
+                log_blob_path = f"logs/{log_filename.name}"
 
-        with open(log_filename, "rb") as f:
-            container_client.upload_blob(
-                name=log_blob_path,
-                data=f,
-                overwrite=True
-            )
+                with open(log_filename, "rb") as f:
+                    container_client.upload_blob(
+                        name=log_blob_path,
+                        data=f,
+                        overwrite=True
+                    )
 
-        logger.info(f"📤 Log subido a Data Lake: {log_blob_path}")
+                logger.info(f"📤 Log subido a Data Lake: {log_blob_path}")
+            else:
+                logger.warning("⚠️ No se pudo subir el log porque no se inicializó container_client")
 
-    except Exception as log_error:
-        logger.error(f"❌ Error subiendo log a Azure: {str(log_error)}")
+        except Exception as log_error:
+            logger.error(f"❌ Error subiendo log a Azure: {str(log_error)}")
 
 
 if __name__ == "__main__":
