@@ -217,10 +217,26 @@ def transform_bronze_to_silver():
         logger.error(f"❌ Error en el pipeline: {str(e)}")
         raise
 
-    finally:
-        end_time = datetime.now()
-        duration = (end_time - start_time).total_seconds()
-        logger.info(f"⏱ Tiempo total de ejecución: {duration} segundos")
+   finally:
+    end_time = datetime.now()
+    duration = (end_time - start_time).total_seconds()
+    logger.info(f"⏱ Tiempo total de ejecución: {duration} segundos")
+
+    try:
+        # Subir log a Data Lake
+        log_blob_path = f"logs/{log_filename.name}"
+
+        with open(log_filename, "rb") as f:
+            container_client.upload_blob(
+                name=log_blob_path,
+                data=f,
+                overwrite=True
+            )
+
+        logger.info(f"📤 Log subido a Data Lake: {log_blob_path}")
+
+    except Exception as log_error:
+        logger.error(f"❌ Error subiendo log a Azure: {str(log_error)}")
 
 
 if __name__ == "__main__":
