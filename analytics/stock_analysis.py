@@ -75,27 +75,27 @@ def analyze_gold_data():
 
     # 💰 Precio promedio (promedio del Avg_price)
     avg_price = (
-    df_all.groupby("symbol")["Avg_price"]
+    df_all.groupby("symbol")["avg_price"]
     .mean()
     .reset_index()
-    .sort_values(by="Avg_price", ascending=False)
+    .sort_values(by="avg_price", ascending=False)
     )
 
     # 📦 Volumen total (suma del volumen promedio diario)
     total_volume = (
-    df_all.groupby("Symbol")["Avg_volume"]
+    df_all.groupby("symbol")["avg_volume"]
     .sum()
     .reset_index()
-    .sort_values(by="Avg_volume", ascending=False)
+    .sort_values(by="avg_volume", ascending=False)
     )
 
     # 🚀 Variación de precio
     price_variation = (
-    df_all.sort_values("Date")
-    .groupby("Symbol")
+    df_all.sort_values("date")
+    .groupby("symbol")
     .agg(
-        first_price=("Avg_price", "first"),
-        last_price=("Avg_price", "last")
+        first_price=("avg_price", "first"),
+        last_price=("avg_price", "last")
         )
     .reset_index()
     )
