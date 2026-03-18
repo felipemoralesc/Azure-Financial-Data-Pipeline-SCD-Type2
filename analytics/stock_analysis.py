@@ -75,7 +75,7 @@ def analyze_gold_data():
 
     # 💰 Precio promedio (promedio del Avg_price)
     avg_price = (
-    df_all.groupby("Symbol")["Avg_price"]
+    df_all.groupby("symbol")["Avg_price"]
     .mean()
     .reset_index()
     .sort_values(by="Avg_price", ascending=False)
