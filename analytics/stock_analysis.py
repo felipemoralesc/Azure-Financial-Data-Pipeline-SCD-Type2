@@ -16,6 +16,22 @@ AZURE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 CONTAINER_NAME = "datalake"
 
 GOLD_PATH = "03-gold/"
+ANALYTICS_PATH = "04-analytics/"
+
+# ==========================================
+# FUNCIÓN PARA GUARDAR PARQUET EN AZURE
+# ==========================================
+
+def upload_parquet(df, path, container_client):
+
+    buffer = BytesIO()
+    df.to_parquet(buffer, index=False, engine="pyarrow")
+    buffer.seek(0)
+
+    blob_client = container_client.get_blob_client(path)
+    blob_client.upload_blob(buffer, overwrite=True)
+
+    print(f"📤 Guardado: {path}")
 
 # ==========================================
 # FUNCIÓN PRINCIPAL
@@ -32,90 +48,69 @@ def analyze_gold_data():
     container_client = blob_service_client.get_container_client(CONTAINER_NAME)
 
     # ==========================================
-    # 1. LISTAR ARCHIVOS GOLD
+    # 1. LEER GOLD
     # ==========================================
 
     blobs = list(container_client.list_blobs(name_starts_with=GOLD_PATH))
 
-    if not blobs:
-        raise Exception("No hay datos en Gold para analizar")
-
-    print(f"📂 Archivos encontrados en Gold: {len(blobs)}")
-
-    # ==========================================
-    # 2. LEER TODOS LOS PARQUET
-    # ==========================================
-
     dfs = []
 
     for blob in blobs:
-
         if blob.name.endswith(".parquet"):
 
             print(f"📥 Leyendo: {blob.name}")
 
-            blob_client = container_client.get_blob_client(blob.name)
-
-            data = blob_client.download_blob().readall()
-
+            data = container_client.get_blob_client(blob.name).download_blob().readall()
             df = pd.read_parquet(BytesIO(data))
 
             dfs.append(df)
 
     df_all = pd.concat(dfs, ignore_index=True)
 
-    print(f"📊 Total registros cargados: {len(df_all)}")
+    print(f"📊 Total registros: {len(df_all)}")
 
     # ==========================================
-    # 3. MÉTRICAS DE NEGOCIO
+    # 2. MÉTRICAS
     # ==========================================
 
-    print("\n📈 MÉTRICAS GENERADAS:")
-
-    # Precio promedio por símbolo
-    avg_price = df_all.groupby("symbol")["price"].mean().sort_values(ascending=False)
-    print("\n💰 Precio promedio por símbolo:")
-    print(avg_price)
-
-    # Volumen total por símbolo
-    total_volume = df_all.groupby("symbol")["volume"].sum().sort_values(ascending=False)
-    print("\n📦 Volumen total por símbolo:")
-    print(total_volume)
-
-    # Último precio por símbolo
-    latest_price = (
-        df_all.sort_values("date")
-        .groupby("symbol")
-        .tail(1)
-        .set_index("symbol")["price"]
+    # 💰 Precio promedio
+    avg_price = (
+        df_all.groupby("symbol")["price"]
+        .mean()
+        .reset_index()
+        .sort_values(by="price", ascending=False)
     )
 
-    print("\n🕒 Último precio registrado:")
-    print(latest_price)
+    # 📦 Volumen total
+    total_volume = (
+        df_all.groupby("symbol")["volume"]
+        .sum()
+        .reset_index()
+        .sort_values(by="volume", ascending=False)
+    )
 
-    # ==========================================
-    # 4. TOP MOVERS (simulación analítica)
-    # ==========================================
-
+    # 🚀 Variación de precio
     price_variation = (
         df_all.sort_values("date")
         .groupby("symbol")
         .agg(first_price=("price", "first"), last_price=("price", "last"))
+        .reset_index()
     )
 
-    price_variation["change_%"] = (
+    price_variation["change_pct"] = (
         (price_variation["last_price"] - price_variation["first_price"])
         / price_variation["first_price"]
     ) * 100
 
-    print("\n🚀 Top ganadores (% cambio):")
-    print(price_variation.sort_values("change_%", ascending=False).head())
+    # ==========================================
+    # 3. GUARDAR RESULTADOS (DATA MART)
+    # ==========================================
 
-    print("\n📉 Top perdedores (% cambio):")
-    print(price_variation.sort_values("change_%", ascending=True).head())
+    upload_parquet(avg_price, ANALYTICS_PATH + "avg_price.parquet", container_client)
+    upload_parquet(total_volume, ANALYTICS_PATH + "total_volume.parquet", container_client)
+    upload_parquet(price_variation, ANALYTICS_PATH + "price_variation.parquet", container_client)
 
-    print("\n✅ Análisis completado correctamente")
-
+    print("✅ Data mart generado correctamente")
 
 # ==========================================
 # EJECUCIÓN
