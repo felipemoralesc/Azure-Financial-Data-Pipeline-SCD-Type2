@@ -1,6 +1,6 @@
 # 🚀 Azure Financial Data Pipeline — End-to-End (Medallion Architecture)
 
-Pipeline de datos end-to-end construido en Azure siguiendo arquitectura Medallion (Bronze → Silver → Gold), con procesamiento incremental, control mediante metadata y consumo analítico en Power BI.
+Pipeline de datos end-to-end construido en Azure siguiendo arquitectura Medallion (`Bronze` → `Silver` → `Gold`), con procesamiento incremental, control mediante metadata y consumo analítico en Power BI.
 
 ## 🎯 Objetivo del proyecto
 
