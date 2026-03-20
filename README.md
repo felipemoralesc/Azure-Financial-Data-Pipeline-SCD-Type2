@@ -32,9 +32,7 @@ Power BI Dashboard
 **🥉 Bronze Layer — Raw Data** 
 
 * Datos crudos en formato JSON
-
 * Sin transformaciones
-
 * Histórico completo (Single Source of Truth)
 
 **🥈 Silver Layer — Clean & Incremental**
