@@ -4,7 +4,7 @@ Pipeline de datos end-to-end construido en Azure siguiendo arquitectura Medallio
 
 ## 🎯 Objetivo del proyecto
 
-Diseñar e implementar un *data pipeline cloud-native* que simule un escenario real de negocio:
+Diseñar e implementar un **data pipeline cloud-native** que simule un escenario real de negocio:
 
 * Ingesta de datos desde API (Alpha Vantage)
 
