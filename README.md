@@ -31,8 +31,9 @@ Gold Layer (Aggregated + Partitioned)
 Power BI Dashboard
 ```
 
-🏗️ Medallion Architecture
-🥉 Bronze Layer — Raw Data
+## 🏗️ Medallion Architecture
+
+## 🥉 Bronze Layer — Raw Data
 
 Datos crudos en formato JSON
 
