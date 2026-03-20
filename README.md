@@ -16,6 +16,7 @@ Almacenamiento optimizado en Data Lake
 
 Consumo analítico en Power BI
 
+```text
 🧩 Arquitectura del pipeline
 API (Stock Data)
    ↓
@@ -28,6 +29,8 @@ Silver Layer (Clean + Incremental Parquet)
 Gold Layer (Aggregated + Partitioned)
    ↓
 Power BI Dashboard
+```
+
 🏗️ Medallion Architecture
 🥉 Bronze Layer — Raw Data
 
