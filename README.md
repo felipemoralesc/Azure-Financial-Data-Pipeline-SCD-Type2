@@ -1,37 +1,233 @@
-# Azure Financial Data Pipeline: SCD Type 2 Implementation
+# 🚀 Azure Financial Data Pipeline — End-to-End (Medallion Architecture)
 
-## 📌 Descripción del Proyecto
-Este proyecto implementa un pipeline de datos de extremo a extremo diseñado para extraer, transformar y cargar (ETL) datos financieros reales en la nube de **Azure**. El objetivo es demostrar la implementación de una arquitectura **Medallion** y la gestión de historización mediante **Slowly Changing Dimensions (SCD) Tipo 2**.
+Pipeline de datos end-to-end construido en Azure siguiendo arquitectura Medallion (Bronze → Silver → Gold), con procesamiento incremental, control mediante metadata y consumo analítico en Power BI.
 
-## 🏗️ Arquitectura Técnica (Cloud Stack)
-* **Ingesta:** Python (API Alpha Vantage)
-* **Almacenamiento:** Azure Data Lake Storage Gen2 (Capa Bronze, Silver, Gold)
-* **Orquestación:** Azure Data Factory (Pendiente)
-* **Transformación:** Pandas / PySpark
-* **Data Warehouse:** Azure SQL Database (Pendiente)
+## 🎯 Objetivo del proyecto
 
-## 🚀 Fase 1: Ingesta Masiva y Resiliencia de Datos
-En esta etapa, se desarrolló un motor de ingesta robusto para consolidar datos de las 50 empresas más importantes del S&P 500.
+Diseñar e implementar un data pipeline cloud-native que simule un escenario real de negocio:
 
-### 🛠️ Retos Técnicos y Soluciones Implementadas:
-1. **Resiliencia en Nube:** Implementación de `connection_timeout=600` en la librería `azure-storage-blob` para asegurar la integridad de la carga de archivos pesados ante inestabilidades de red.
-2. **Gestión de Rate Limiting:** Implementación de pausas activas (12s) para cumplir con el límite de la API gratuita, logrando una extracción masiva de **5,000 registros** sin bloqueos.
-3. **Seguridad SSL:** Manejo de excepciones de protocolo SSL mediante `urllib3` para garantizar la conectividad en diversos entornos de red.
-4. **Seguridad de Credenciales:** Uso de variables de entorno (`.env`) y plantillas (`.env.example`) para proteger secretos de infraestructura.
+Ingesta de datos desde API (Alpha Vantage)
 
-## 📂 Estructura del Repositorio
-* **`azure/`**: Configuraciones y despliegues de recursos cloud.
-* **`data/`**: Directorio para backups locales (incluye `.gitkeep` para mantener estructura sin subir datos pesados).
-* **`scripts/`**: 
-    * `extract_massive_data.py`: Motor de ingesta masiva (API -> Bronze).
-    * `bronze_to_silver.py`: Lógica de transformación a Parquet (Bronze -> Silver).
-* **`.env.example`**: Plantilla para replicar el entorno de forma segura.
+Procesamiento incremental (metadata-driven)
 
-## 📊 Estado de las Capas (Data Lake)
-* **Capa 01-Bronze:** Almacenamiento de archivos JSON crudos con la respuesta íntegra de la API.
-* **Capa 02-Silver (En proceso):** Transformación de JSON a **Parquet** utilizando Pandas, optimizando tipos de datos y preparando la estructura para el modelo dimensional.
+Validaciones de calidad de datos
 
----
-**Autor:** Felipe Morales  
-**Rol:** Data Engineer  
-**Habilidades:** SQL | Data Warehousing | Python | Azure Cloud
+Almacenamiento optimizado en Data Lake
+
+Consumo analítico en Power BI
+
+🧩 Arquitectura del pipeline
+API (Stock Data)
+   ↓
+Azure Data Lake Storage Gen2
+   ↓
+Bronze Layer (Raw JSON)
+   ↓
+Silver Layer (Clean + Incremental Parquet)
+   ↓
+Gold Layer (Aggregated + Partitioned)
+   ↓
+Power BI Dashboard
+🏗️ Medallion Architecture
+🥉 Bronze Layer — Raw Data
+
+Datos crudos en formato JSON
+
+Sin transformaciones
+
+Histórico completo (Single Source of Truth)
+
+🥈 Silver Layer — Clean & Incremental
+
+Datos limpios y estandarizados
+
+Eliminación de duplicados
+
+Conversión de tipos (string → numeric)
+
+Procesamiento incremental basado en metadata
+
+🥇 Gold Layer — Business Ready
+
+Datos agregados para analítica
+
+KPIs calculados (ej: change_pct)
+
+Particionamiento por fecha:
+
+03-gold/stocks/year=YYYY/month=MM/day=DD/
+
+Optimización para consultas (partition pruning)
+
+📊 Consumption Layer (Power BI)
+
+Generación de datasets optimizados
+
+Consumo desacoplado del pipeline
+
+Dashboard enfocado en análisis de mercado
+
+⚙️ Features principales
+🔥 Incremental Ingestion (Metadata-driven)
+
+Procesa solo archivos nuevos
+
+Evita reprocesamiento
+
+Pipeline idempotente
+
+✅ Data Quality Checks
+
+Validaciones implementadas:
+
+symbol no nulo
+
+date válido
+
+price > 0
+
+volume >= 0
+
+Eliminación de duplicados
+
+🧱 Data Lake Optimization
+
+Uso de Parquet en Silver
+
+Particionamiento en Gold
+
+Optimizado para analítica
+
+🔄 Orquestación automática
+
+Pipeline ejecutado con GitHub Actions
+
+Flujo completo:
+
+Extract → Bronze → Silver → Gold
+📝 Logging & Monitoring
+
+Logs estructurados por ejecución:
+
+registros procesados
+
+válidos / inválidos
+
+tiempo de ejecución
+
+Persistencia en Data Lake:
+
+logs/bronze_to_silver_YYYYMMDD.log
+🗂️ Metadata Management
+
+Control de archivos procesados
+
+Evita reprocesamiento
+
+Soporte para incremental ingestion
+
+metadata/processed_files.json
+📂 Estructura del Data Lake
+01-bronze/    → Datos crudos
+02-silver/    → Datos limpios (Parquet)
+03-gold/      → Datos analíticos particionados
+04-analytics/ → Consumo / análisis específicos
+logs/         → Logs del pipeline
+metadata/     → Control de procesamiento
+📁 Estructura del repositorio
+.
+├── .github/workflows/pipeline.yml
+├── scripts/
+│   ├── extract_massive_data.py
+│   ├── bronze_to_silver.py
+│   └── silver_to_gold.py
+├── powerbi/
+│   └── stock_analysis.py
+├── data/
+│   └── sample/
+│       ├── bronze_sample.json
+│       └── silver_sample.json
+├── .env.example
+├── .gitignore
+├── README.md
+├── requirements.txt
+📊 Sample Data (Bronze vs Silver)
+
+Ejemplo de transformación:
+
+Bronze (raw API)
+{
+  "1. open": "249.4000",
+  "2. high": "251.8300"
+}
+Silver (clean)
+{
+  "open": 249.40,
+  "high": 251.83
+}
+📈 Data Consumption (Power BI)
+
+Dashboard enfocado en análisis financiero:
+
+Variación porcentual de acciones
+
+Top & Bottom performers
+
+Promedio del mercado
+
+Visualización ejecutiva (storytelling)
+
+📸 (Agregar screenshot del dashboard aquí)
+
+🛠️ Tecnologías utilizadas
+
+Azure Data Lake Storage Gen2
+
+Python
+
+Pandas
+
+GitHub Actions
+
+Power BI
+
+💡 Decisiones técnicas clave
+
+Procesamiento incremental en Silver (no en extract)
+
+Uso de metadata para control de estado
+
+Separación clara por capas (Medallion)
+
+Logging persistente para observabilidad
+
+Consumo desacoplado del pipeline
+
+🚀 Ejecución del pipeline
+
+El pipeline se ejecuta automáticamente mediante GitHub Actions:
+
+Trigger manual o programado
+
+Uso de secrets para credenciales
+
+Integración directa con Data Lake
+
+💬 Sobre este proyecto
+
+Este proyecto demuestra habilidades en:
+
+Data Engineering
+
+Diseño de pipelines
+
+Procesamiento incremental
+
+Modelado de datos para analítica
+
+Integración con herramientas de BI
+
+👤 Autor
+
+Felipe Morales
+Data Engineer
