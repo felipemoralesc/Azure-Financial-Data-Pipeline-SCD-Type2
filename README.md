@@ -159,6 +159,7 @@ Dashboard enfocado en análisis financiero:
 * Top & Bottom performers
 * Promedio del mercado
 * Visualización ejecutiva (storytelling)
+<img width="935" height="499" alt="image" src="https://github.com/user-attachments/assets/af524408-4e77-4a61-840a-8e372b110499" />
 
 
 
