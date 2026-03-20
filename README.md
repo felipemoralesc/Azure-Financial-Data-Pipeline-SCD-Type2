@@ -163,55 +163,42 @@ Dashboard enfocado en análisis financiero:
 
 
 
-🛠️ Tecnologías utilizadas
 
-Azure Data Lake Storage Gen2
+## 🛠️ Tecnologías utilizadas
 
-Python
+* Azure Data Lake Storage Gen2
+* Python
+* Pandas
+* GitHub Actions
+* Power BI
 
-Pandas
+## 💡 Decisiones técnicas clave
 
-GitHub Actions
+* Procesamiento incremental en `Silver (no en extract)`
+* Uso de metadata para control de estado
+* Separación clara por capas (Medallion)
+* Logging persistente para observabilidad
+* Consumo desacoplado del pipeline
 
-Power BI
-
-💡 Decisiones técnicas clave
-
-Procesamiento incremental en Silver (no en extract)
-
-Uso de metadata para control de estado
-
-Separación clara por capas (Medallion)
-
-Logging persistente para observabilidad
-
-Consumo desacoplado del pipeline
-
-🚀 Ejecución del pipeline
+## 🚀 Ejecución del pipeline
 
 El pipeline se ejecuta automáticamente mediante GitHub Actions:
 
-Trigger manual o programado
+* Trigger manual o programado
+* Uso de secrets para credenciales
+* Integración directa con Data Lake
 
-Uso de secrets para credenciales
-
-Integración directa con Data Lake
-
-💬 Sobre este proyecto
+## 💬 Sobre este proyecto
 
 Este proyecto demuestra habilidades en:
 
-Data Engineering
+* Data Engineering
+* Diseño de pipelines
+* Procesamiento incremental
+* Modelado de datos para analítica
+* Integración con herramientas de BI
 
-Diseño de pipelines
+**👤 Autor**
 
-Procesamiento incremental
-
-Modelado de datos para analítica
-
-Integración con herramientas de BI
-
-👤 Autor
-
-Felipe Morales
-Data Engineer
+**Felipe Morales**
+**Data Engineer**
