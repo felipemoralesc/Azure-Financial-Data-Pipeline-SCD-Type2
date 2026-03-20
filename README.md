@@ -38,32 +38,23 @@ Power BI Dashboard
 **🥈 Silver Layer — Clean & Incremental**
 
 * Datos limpios y estandarizados
-
 * Eliminación de duplicados
-
 * Conversión de tipos (string → numeric)
-
 * Procesamiento incremental basado en metadata
 
 **🥇 Gold Layer — Business Ready**
 
 * Datos agregados para analítica
-
 * KPIs calculados (ej: change_pct)
-
 * Particionamiento por fecha:
-
 `03-gold/stocks/year=YYYY/month=MM/day=DD/`
-
 * Optimización para consultas (partition pruning)
 
-📊 Consumption Layer (Power BI)
+## 📊 Consumption Layer (Power BI)
 
-Generación de datasets optimizados
-
-Consumo desacoplado del pipeline
-
-Dashboard enfocado en análisis de mercado
+* Generación de datasets optimizados
+* Consumo desacoplado del pipeline
+* Dashboard enfocado en análisis de mercado
 
 ⚙️ Features principales
 🔥 Incremental Ingestion (Metadata-driven)
