@@ -33,35 +33,35 @@ Power BI Dashboard
 
 ## 🏗️ Medallion Architecture
 
-## 🥉 Bronze Layer — Raw Data
+**🥉 Bronze Layer — Raw Data** 
 
-Datos crudos en formato JSON
+* Datos crudos en formato JSON
 
-Sin transformaciones
+* Sin transformaciones
 
-Histórico completo (Single Source of Truth)
+* Histórico completo (Single Source of Truth)
 
-🥈 Silver Layer — Clean & Incremental
+**🥈 Silver Layer — Clean & Incremental**
 
-Datos limpios y estandarizados
+* Datos limpios y estandarizados
 
-Eliminación de duplicados
+* Eliminación de duplicados
 
-Conversión de tipos (string → numeric)
+* Conversión de tipos (string → numeric)
 
-Procesamiento incremental basado en metadata
+* Procesamiento incremental basado en metadata
 
-🥇 Gold Layer — Business Ready
+**🥇 Gold Layer — Business Ready**
 
-Datos agregados para analítica
+* Datos agregados para analítica
 
-KPIs calculados (ej: change_pct)
+* KPIs calculados (ej: change_pct)
 
-Particionamiento por fecha:
+* Particionamiento por fecha:
 
-03-gold/stocks/year=YYYY/month=MM/day=DD/
+`03-gold/stocks/year=YYYY/month=MM/day=DD/`
 
-Optimización para consultas (partition pruning)
+* Optimización para consultas (partition pruning)
 
 📊 Consumption Layer (Power BI)
 
