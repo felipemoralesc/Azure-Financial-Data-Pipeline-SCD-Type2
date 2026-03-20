@@ -7,13 +7,9 @@ Pipeline de datos end-to-end construido en Azure siguiendo arquitectura Medallio
 Diseñar e implementar un **data pipeline cloud-native** que simule un escenario real de negocio:
 
 * Ingesta de datos desde API (Alpha Vantage)
-
 * Procesamiento incremental (metadata-driven)
-
 * Validaciones de calidad de datos
-
 * Almacenamiento optimizado en Data Lake
-
 * Consumo analítico en Power BI
 
 ## 🧩 Arquitectura del pipeline
