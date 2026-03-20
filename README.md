@@ -84,7 +84,7 @@ Power BI Dashboard
 * Pipeline ejecutado con GitHub Actions
 * Flujo completo:
 
-```text Extract → Bronze → Silver → Gold```
+``` Extract → Bronze → Silver → Gold```
 
 ## 📝 Logging & Monitoring
 
@@ -93,25 +93,27 @@ Power BI Dashboard
 * válidos / inválidos
 * tiempo de ejecución
 * Persistencia en Data Lake:
-```texto logs/bronze_to_silver_YYYYMMDD.log```
+``` logs/bronze_to_silver_YYYYMMDD.log```
 
 ## 🗂️ Metadata Management
 
-Control de archivos procesados
+* Control de archivos procesados
+* Evita reprocesamiento
+* Soporte para incremental ingestion
+```metadata/processed_files.json```
 
-Evita reprocesamiento
-
-Soporte para incremental ingestion
-
-metadata/processed_files.json
-📂 Estructura del Data Lake
+## 📂 Estructura del Data Lake
+```text
 01-bronze/    → Datos crudos
 02-silver/    → Datos limpios (Parquet)
 03-gold/      → Datos analíticos particionados
 04-analytics/ → Consumo / análisis específicos
 logs/         → Logs del pipeline
 metadata/     → Control de procesamiento
-📁 Estructura del repositorio
+```
+
+## 📁 Estructura del repositorio
+```text
 .
 ├── .github/workflows/pipeline.yml
 ├── scripts/
@@ -128,33 +130,37 @@ metadata/     → Control de procesamiento
 ├── .gitignore
 ├── README.md
 ├── requirements.txt
-📊 Sample Data (Bronze vs Silver)
+```
+## 📊 Sample Data (Bronze vs Silver)
 
 Ejemplo de transformación:
 
-Bronze (raw API)
+**Bronze (raw API)**
+```text
+</> JSON
 {
   "1. open": "249.4000",
   "2. high": "251.8300"
 }
-Silver (clean)
+```
+**Silver (clean)**
+```text
+</> JSON
 {
   "open": 249.40,
   "high": 251.83
 }
-📈 Data Consumption (Power BI)
+```
+
+## 📈 Data Consumption (Power BI)
 
 Dashboard enfocado en análisis financiero:
+* Variación porcentual de acciones
+* Top & Bottom performers
+* Promedio del mercado
+* Visualización ejecutiva (storytelling)
 
-Variación porcentual de acciones
 
-Top & Bottom performers
-
-Promedio del mercado
-
-Visualización ejecutiva (storytelling)
-
-📸 (Agregar screenshot del dashboard aquí)
 
 🛠️ Tecnologías utilizadas
 
