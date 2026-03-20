@@ -16,7 +16,7 @@ Almacenamiento optimizado en Data Lake
 
 Consumo analítico en Power BI
 
-🧩 Arquitectura del pipeline
+## 🧩 Arquitectura del pipeline
 ```text
 API (Stock Data)
    ↓
