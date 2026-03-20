@@ -50,64 +50,52 @@ Power BI Dashboard
 `03-gold/stocks/year=YYYY/month=MM/day=DD/`
 * Optimización para consultas (partition pruning)
 
-### 📊 Consumption Layer (Power BI)
+## 📊 Consumption Layer (Power BI)
 
 * Generación de datasets optimizados
 * Consumo desacoplado del pipeline
 * Dashboard enfocado en análisis de mercado
 
-⚙️ Features principales
-🔥 Incremental Ingestion (Metadata-driven)
+## ⚙️ Features principales
+**🔥 Incremental Ingestion (Metadata-driven)**
 
-Procesa solo archivos nuevos
+* Procesa solo archivos nuevos
+* Evita reprocesamiento
+* Pipeline idempotente
 
-Evita reprocesamiento
+## ✅ Data Quality Checks
 
-Pipeline idempotente
+**Validaciones implementadas:**
 
-✅ Data Quality Checks
+* `symbol` no nulo
+* `date` válido
+* `price > 0`
+* `volume >= 0`
+* Eliminación de duplicados
 
-Validaciones implementadas:
+## 🧱 Data Lake Optimization
 
-symbol no nulo
+* Uso de Parquet en Silver
+* Particionamiento en Gold
+* Optimizado para analítica
 
-date válido
+## 🔄 Orquestación automática
 
-price > 0
+* Pipeline ejecutado con GitHub Actions
+* Flujo completo:
 
-volume >= 0
+```text Extract → Bronze → Silver → Gold```
 
-Eliminación de duplicados
+## 📝 Logging & Monitoring
 
-🧱 Data Lake Optimization
+* Logs estructurados por ejecución:
+* registros procesados
+* válidos / inválidos
+* tiempo de ejecución
+* Persistencia en Data Lake:
+```texto logs/bronze_to_silver_YYYYMMDD.log```
 
-Uso de Parquet en Silver
-
-Particionamiento en Gold
-
-Optimizado para analítica
-
-🔄 Orquestación automática
-
-Pipeline ejecutado con GitHub Actions
-
-Flujo completo:
-
-Extract → Bronze → Silver → Gold
-📝 Logging & Monitoring
-
-Logs estructurados por ejecución:
-
-registros procesados
-
-válidos / inválidos
-
-tiempo de ejecución
-
-Persistencia en Data Lake:
-
-logs/bronze_to_silver_YYYYMMDD.log
-🗂️ Metadata Management
+## 🗂️ Metadata Management
 
 Control de archivos procesados
 
