@@ -16,8 +16,8 @@ Almacenamiento optimizado en Data Lake
 
 Consumo analítico en Power BI
 
-```text
 🧩 Arquitectura del pipeline
+```text
 API (Stock Data)
    ↓
 Azure Data Lake Storage Gen2
